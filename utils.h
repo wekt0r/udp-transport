@@ -23,9 +23,10 @@
 
 #define min(X, Y) (((X) < (Y))? (X): (Y))
 
+#define handle_error(msg) \
+        do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
 struct segment {
-    // int id; //since our segments array will be cyclic, our id = size/BUFFER_SIZE 
-    // might be problem if we get old udp and write it 
     int status;
     char buffer[BUFFER_SIZE];
 };
@@ -33,4 +34,4 @@ struct segment {
 void send_requests(int sockfd, size_t saved_prefix_len, struct segment *segments, size_t size, uint16_t port, char *ip_addr);
 int wait_for_data(int sockfd);
 int receive_data(int sockfd, struct segment *segments, size_t saved_prefix_len, char *addr, uint16_t port);
-int write_prefix_and_get_len(size_t saved_prefix_len, struct segment *segments, FILE *file, size_t size);
+int write_prefix_and_get_len(size_t saved_prefix_len, struct segment *segments, int file, size_t size);

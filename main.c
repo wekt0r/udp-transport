@@ -11,6 +11,9 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "utils.h"
 
@@ -42,21 +45,18 @@ void parse_args(int argc, char *argv[],
 int init_socket(){
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0){
-        fprintf(stderr, "socket");
-        exit(EXIT_FAILURE);
+        handle_error("socket");
     }
 
     struct sockaddr_in our_address;
 	bzero (&our_address, sizeof(our_address));
 	our_address.sin_family      = AF_INET;
-	our_address.sin_port        = 0; //htons(12345); 
-    // setting port 0 allows OS to pick unused port - we can retrieve it by getsockname(), 
-    // for sake of assignment (clarity of code and testing via nc) port will be hardcoded
+	our_address.sin_port        = 0; 
+    // setting port 0 allows OS to pick unused port
 	our_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	if (bind (sockfd, (struct sockaddr*)&our_address, sizeof(our_address)) < 0) {
-		fprintf(stderr, "bind error: %s\n", strerror(errno)); 
-		return EXIT_FAILURE;
+		handle_error("bind");
 	}
 
     return sockfd;
@@ -74,7 +74,10 @@ int main(int argc, char *argv[]){
 
     int sockfd = init_socket();
 
-    FILE *file = fopen(filename, "w");
+    int filefd = open(filename, O_WRONLY| O_CREAT | O_TRUNC, 0666);
+    if (filefd < 0){
+        handle_error("open");
+    }
 
     struct segment segments[SEGMENTS_LEN];
     bzero(segments, sizeof(segments));
@@ -88,17 +91,17 @@ int main(int argc, char *argv[]){
             // but there is non-zero probability that we dont get any answer after sending first packs of requests
             send_requests(sockfd, saved_prefix_len, segments, size, port, addr);
         }
-        //usleep(50000); 
-        // usleep call is heuristic approach that allows us to receive more packets since wait_for_data loop stops when we receive first one  
         while(receive_data(sockfd, segments, saved_prefix_len, addr, port));
         prev_saved_len = saved_prefix_len;
-        saved_prefix_len = write_prefix_and_get_len(saved_prefix_len, segments, file, size);
+        saved_prefix_len = write_prefix_and_get_len(saved_prefix_len, segments, filefd, size);
 
         if (prev_saved_len != saved_prefix_len)
-            printf("Progress: %f %% \n", 100.0*saved_prefix_len/(1.0*(size/BUFFER_SIZE + 1)));
+            printf("Progress: %f%% \n", 100.0*saved_prefix_len/(1.0*(size/BUFFER_SIZE + 1)));
     }
     printf("Completed\n");
 
-    close(sockfd);
+    if (close(filefd) < 0 || close(sockfd) < 0){
+        handle_error("close");
+    }
     return 0;
 }

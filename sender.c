@@ -19,8 +19,7 @@ void send_request(int sockfd, size_t offset, size_t size, uint16_t port, char *i
     inet_pton(AF_INET, ip_addr, &server_address.sin_addr);
 
     if (sendto(sockfd, message, strlen(message), 0, (struct sockaddr *) &server_address, sizeof(server_address)) < 0){
-        fprintf(stderr, "sendto");
-        exit(EXIT_FAILURE);
+        handle_error("sendto");
     }
 
 }

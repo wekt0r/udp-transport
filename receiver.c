@@ -23,8 +23,7 @@ int wait_for_data(int sockfd){
 
     int ready = select(sockfd+1, &descriptors, NULL, NULL, &timeout); 
     if (ready < 0){
-        fprintf(stderr, "select");
-        exit(EXIT_FAILURE);
+        handle_error("select");
     }
     return ready;
 }
@@ -51,8 +50,7 @@ int receive_data(int sockfd, struct segment *segments, size_t saved_prefix_len, 
     }
     
     if (datagram_len < 0) {
-        fprintf(stderr, "recvfrom error: %s\n", strerror(errno)); 
-        return EXIT_FAILURE;
+        handle_error("recvfrom");
     }
     
 
