@@ -26,14 +26,13 @@ void send_request(int sockfd, size_t offset, size_t size, uint16_t port, char *i
 
 
 void send_requests(int sockfd, size_t saved_prefix_len, struct segment *segments, size_t size, uint16_t port, char *ip_addr){
-    for(size_t i=saved_prefix_len; i < min(saved_prefix_len + SEGMENTS_LEN, size/BUFFER_SIZE); i++){
+    for(size_t i=saved_prefix_len; i < min(saved_prefix_len + SEGMENTS_LEN, size/BUFFER_SIZE + 1); i++){
         if (segments[i % SEGMENTS_LEN ].status != RECEIVED_DATA) {
-            send_request(sockfd, i*BUFFER_SIZE, BUFFER_SIZE, port, ip_addr);
+            send_request(sockfd, i*BUFFER_SIZE, 
+                         (i == size/BUFFER_SIZE)? (size % BUFFER_SIZE) : BUFFER_SIZE, 
+                         port, ip_addr);
             segments[i % SEGMENTS_LEN].status = SENT_REQUEST;
         }
     }
-    if (segments[(size/BUFFER_SIZE) % SEGMENTS_LEN].status != RECEIVED_DATA){
-        send_request(sockfd, (size/BUFFER_SIZE) * BUFFER_SIZE, size % BUFFER_SIZE, port, ip_addr);
-        segments[(size/BUFFER_SIZE) % SEGMENTS_LEN].status = SENT_REQUEST;
-    }
 }
+
